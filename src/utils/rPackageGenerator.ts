@@ -23,7 +23,7 @@ Description: Provides a minimal interactive learnr tutorial designed specificall
     color vision deficiency (CVD) simulation.
 License: MIT + file LICENSE
 Encoding: UTF-8
-LazyData: true
+NeedsCompilation: no
 RoxygenNote: 7.3.1
 Imports:
     learnr (>= 0.11.0),
@@ -38,6 +38,24 @@ Suggests:
 VignetteBuilder: knitr
 URL: https://github.com/BoazRosenberg/ColorLab
 BugReports: https://github.com/BoazRosenberg/ColorLab/issues
+`,
+  },
+  {
+    path: '.Rbuildignore',
+    description: 'Instructs R CMD build to exclude non-R repository files',
+    content: `^src$
+^node_modules$
+^package\\.json$
+^package-lock\\.json$
+^tsconfig.*\\.json$
+^vite\\.config\\.ts$
+^\\.env.*$
+^metadata\\.json$
+^index\\.html$
+^\\.git$
+^\\.gitignore$
+^\\.aistudio.*$
+^dist$
 `,
   },
   {

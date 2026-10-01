@@ -1,0 +1,13 @@
+^src$
+^node_modules$
+^package\.json$
+^package-lock\.json$
+^tsconfig.*\.json$
+^vite\.config\.ts$
+^\.env.*$
+^metadata\.json$
+^index\.html$
+^\.git$
+^\.gitignore$
+^\.aistudio.*$
+^dist$
