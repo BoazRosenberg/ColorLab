@@ -1,0 +1,28 @@
+Package: ColorLab
+Title: Interactive Color and Shape Palette Designer for ggplot2
+Version: 0.1.0
+Authors@R: c(
+    person("Boaz", "Rosenberg", email = "BoazRsnbrg@gmail.com", role = c("aut", "cre"))
+  )
+Description: Provides a minimal interactive learnr tutorial designed specifically for the
+    narrow dimensions of the RStudio Tutorial Pane. Users can interactively design
+    custom color palettes, sample and edge-prune preset palettes, build multi-anchor
+    asymmetric interpolated gradients, and configure ggplot2 shape scales with live
+    color vision deficiency (CVD) simulation.
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 7.3.1
+Imports:
+    learnr (>= 0.11.0),
+    shiny (>= 1.8.0),
+    bslib (>= 0.7.0),
+    ggplot2 (>= 3.5.0),
+    colorspace (>= 2.1-0)
+Suggests:
+    knitr,
+    rmarkdown,
+    testthat (>= 3.0.0)
+VignetteBuilder: knitr
+URL: https://github.com/BoazRosenberg/ColorLab
+BugReports: https://github.com/BoazRosenberg/ColorLab/issues
