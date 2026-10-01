@@ -1,0 +1,6 @@
+{
+  "name": "RStudio learnr Palette & Shape Designer",
+  "description": "Interactive RStudio Tutorial Pane applet & R package for designing custom, preset, interpolated color palettes and ggplot2 shape scales with live CVD simulation.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
