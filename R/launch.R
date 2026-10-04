@@ -12,7 +12,9 @@
 #' ColorLab::run_colorlab()
 #' }
 run_colorlab <- function(...) {
-  learnr::run_tutorial("palette_designer", package = "ColorLab", ...)
+  tuts <- tryCatch(learnr::available_tutorials("ColorLab")$name, error = function(e) character(0))
+  tut <- if ("palette_designer" %in% tuts) "palette_designer" else if ("colors" %in% tuts) "colors" else "palette_designer"
+  learnr::run_tutorial(tut, package = "ColorLab", ...)
 }
 
 #' @rdname run_colorlab

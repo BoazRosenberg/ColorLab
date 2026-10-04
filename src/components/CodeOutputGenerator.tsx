@@ -6,6 +6,7 @@ import { ColorSwatch, PresetPalette, ShapeAssignment, ActiveTab } from '../types
 interface CodeOutputGeneratorProps {
   activeTab: ActiveTab;
   customSwatches: ColorSwatch[];
+  showNaming?: boolean;
   selectedPreset: PresetPalette;
   presetN: number;
   sampledPresetColors: string[];
@@ -20,6 +21,7 @@ interface CodeOutputGeneratorProps {
 export const CodeOutputGenerator: React.FC<CodeOutputGeneratorProps> = ({
   activeTab,
   customSwatches,
+  showNaming = false,
   selectedPreset,
   presetN,
   sampledPresetColors,
@@ -35,17 +37,18 @@ export const CodeOutputGenerator: React.FC<CodeOutputGeneratorProps> = ({
   const [presetCodeMode, setPresetCodeMode] = useState<'ggplot' | 'vector'>('ggplot');
 
   const generateRCode = (): string => {
-    // Tab 1: Custom Palette -> Default & only need is vector output!
+    // Tab 1: Custom Palette -> Default is clean vector output!
     if (activeTab === 'custom') {
-      const hasNamed = customSwatches.some(s => s.name && s.name.trim().length > 0);
-      const vectorItems = customSwatches.map(s => {
-        if (hasNamed && s.name && s.name.trim().length > 0) {
-          const cleanName = s.name.trim().replace(/[^a-zA-Z0-9_]/g, '_');
+      if (showNaming) {
+        const vectorItems = customSwatches.map((s, i) => {
+          const cleanName = (s.name && s.name.trim().length > 0)
+            ? s.name.trim().replace(/[^a-zA-Z0-9_]/g, '_')
+            : `c${i + 1}`;
           return `${cleanName} = "${s.hex}"`;
-        }
-        return `"${s.hex}"`;
-      });
-      return `c(${vectorItems.join(', ')})`;
+        });
+        return `c(${vectorItems.join(', ')})`;
+      }
+      return `c(${customSwatches.map(s => `"${s.hex}"`).join(', ')})`;
     }
 
     // Tab 2: Presets -> Default is ggplot layer code, can toggle to vector
@@ -61,7 +64,7 @@ export const CodeOutputGenerator: React.FC<CodeOutputGeneratorProps> = ({
       return selectedPreset.rScaleColor;
     }
 
-    // Tab 3: Gradient Builder -> Default is scale_color_gradientn or colorRampPalette
+    // Tab 3: Gradient Builder -> Default is scale_color_gradientn
     if (activeTab === 'gradient') {
       const anchorHexes = gradientAnchors.map(a => `"${a.hex}"`).join(', ');
       return `scale_color_gradientn(colors = c(${anchorHexes}))`;

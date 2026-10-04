@@ -28,19 +28,19 @@ export const HeaderAccessibilityBar: React.FC<HeaderAccessibilityBarProps> = ({
   return (
     <header className="bg-white border-b border-slate-200 text-slate-800 px-3 py-2 shrink-0">
       <div className="flex items-center justify-between gap-2">
-        {/* Brand / Title (Minimal) */}
+        {/* Single clean title: ColorLab */}
         <div className="flex items-center gap-2">
           <div className="w-5 h-5 rounded bg-blue-600 flex items-center justify-center text-[10px] font-bold text-white shadow-xs">
-            R
+            C
           </div>
-          <span className="text-xs font-semibold text-slate-900 tracking-tight">
-            Palette Studio
+          <span className="text-sm font-bold text-slate-900 tracking-tight">
+            ColorLab
           </span>
         </div>
 
         {/* Right Action Icons */}
         <div className="flex items-center gap-1.5">
-          {/* Toggleable CVD / Accessibility Button (Folded by default) */}
+          {/* Folded CVD / Accessibility Option Button */}
           <button
             onClick={() => setShowA11yOptions(!showA11yOptions)}
             title="Color Vision Deficiency (CVD) Simulation & Filters"
@@ -94,7 +94,6 @@ export const HeaderAccessibilityBar: React.FC<HeaderAccessibilityBarProps> = ({
       {/* Expandable Accessibility Panel (Folded by default) */}
       {showA11yOptions && (
         <div className="mt-2 pt-2 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 text-xs animate-in fade-in duration-100">
-          {/* CVD Mode Selector */}
           <div className="flex items-center gap-1.5">
             <span className="text-[11px] text-slate-500">CVD Simulation:</span>
             <select
@@ -110,7 +109,6 @@ export const HeaderAccessibilityBar: React.FC<HeaderAccessibilityBarProps> = ({
             </select>
           </div>
 
-          {/* Colorblind Safe Filter Checkbox */}
           <label className="flex items-center gap-1.5 cursor-pointer text-[11px] text-slate-700 select-none">
             <input
               type="checkbox"

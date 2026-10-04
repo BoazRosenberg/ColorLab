@@ -29,12 +29,14 @@ export default function App() {
   // Active Tab: 1. Custom, 2. Preset, 3. Gradient, 4. Shapes
   const [activeTab, setActiveTab] = useState<ActiveTab>('custom');
 
-  // Tab 1: Custom Palette State (starts with 3 default swatches, naming folded)
+  // Tab 1: Custom Palette State (starts with clean default swatches, naming folded)
   const [customSwatches, setCustomSwatches] = useState<ColorSwatch[]>([
-    { id: 'swatch-1', hex: '#1F77B4', name: 'primary' },
-    { id: 'swatch-2', hex: '#FF7F0E', name: 'secondary' },
-    { id: 'swatch-3', hex: '#2CA02C', name: 'accent' },
+    { id: 'swatch-1', hex: '#2C3E50', name: 'c1' },
+    { id: 'swatch-2', hex: '#E74C3C', name: 'c2' },
+    { id: 'swatch-3', hex: '#F1C40F', name: 'c3' },
+    { id: 'swatch-4', hex: '#27AE60', name: 'c4' },
   ]);
+  const [showNaming, setShowNaming] = useState<boolean>(false);
 
   // Tab 2: Preset Palettes State (Qualitative default)
   const [selectedPreset, setSelectedPreset] = useState<PresetPalette>(PRESET_PALETTES[6]); // Okabe-Ito (qualitative)
@@ -44,16 +46,17 @@ export default function App() {
 
   // Tab 3: Gradient / Custom Interpolation Builder State
   const [gradientAnchors, setGradientAnchors] = useState<GradientAnchorItem[]>([
-    { id: 'a1', hex: '#440154', name: 'K1', stepsToNext: 2 },
-    { id: 'a2', hex: '#21908C', name: 'K2', stepsToNext: 2 },
-    { id: 'a3', hex: '#FDE725', name: 'K3', stepsToNext: 2 },
+    { id: 'a1', hex: '#2C3E50', name: 'K1', stepsToNext: 3 },
+    { id: 'a2', hex: '#E74C3C', name: 'K2', stepsToNext: 3 },
+    { id: 'a3', hex: '#F1C40F', name: 'K3', stepsToNext: 3 },
   ]);
 
   // Tab 4: ggplot Shape Selector State (mapped to palette colors)
   const [shapes, setShapes] = useState<ShapeAssignment[]>([
-    { pch: 16, color: '#1F77B4', label: 'Class 1' },
-    { pch: 17, color: '#FF7F0E', label: 'Class 2' },
-    { pch: 15, color: '#2CA02C', label: 'Class 3' },
+    { pch: 16, color: '#2C3E50', label: 'Class 1' },
+    { pch: 17, color: '#E74C3C', label: 'Class 2' },
+    { pch: 15, color: '#F1C40F', label: 'Class 3' },
+    { pch: 18, color: '#27AE60', label: 'Class 4' },
   ]);
 
   // Sampled colors for preset tab
@@ -80,7 +83,7 @@ export default function App() {
     if (activeTab === 'shapes') {
       return shapes.map(s => s.color);
     }
-    return ['#1F77B4'];
+    return ['#2C3E50'];
   }, [activeTab, customSwatches, sampledPresetColors, interpolatedGradientColors, shapes]);
 
   // Action: Import colors to Custom Palette Tab (Tab 1)
@@ -181,6 +184,8 @@ export default function App() {
             swatches={customSwatches}
             setSwatches={setCustomSwatches}
             cvdMode={cvdMode}
+            showNaming={showNaming}
+            setShowNaming={setShowNaming}
           />
         )}
 
@@ -231,10 +236,11 @@ export default function App() {
         />
       </div>
 
-      {/* 5. Live Code Output Generator (Vector default for custom, ggplot default for presets) */}
+      {/* 5. Live Code Output Generator */}
       <CodeOutputGenerator
         activeTab={activeTab}
         customSwatches={customSwatches}
+        showNaming={showNaming}
         selectedPreset={selectedPreset}
         presetN={presetN}
         sampledPresetColors={sampledPresetColors}
@@ -251,7 +257,9 @@ export default function App() {
         <LearnrExercise
           currentPaletteCode={
             activeTab === 'custom'
-              ? `scale_color_manual(values = c(${customSwatches.map(s => `"${s.hex}"`).join(', ')}))`
+              ? (showNaming
+                  ? `c(${customSwatches.map(s => `${s.name || 'c'} = "${s.hex}"`).join(', ')})`
+                  : `c(${customSwatches.map(s => `"${s.hex}"`).join(', ')})`)
               : activeTab === 'preset'
               ? (isPruned
                   ? `scale_color_manual(values = c(${sampledPresetColors.map(c => `"${c}"`).join(', ')}))`

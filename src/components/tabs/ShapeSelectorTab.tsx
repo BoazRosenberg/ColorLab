@@ -88,10 +88,10 @@ export const ShapeSelectorTab: React.FC<ShapeSelectorTabProps> = ({
   };
 
   return (
-    <div className="space-y-2.5">
+    <div className="space-y-2">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <span className="text-xs font-medium text-slate-700">
+        <span className="text-xs font-semibold text-slate-800">
           Shape Scale ({shapes.length})
         </span>
 
@@ -124,19 +124,18 @@ export const ShapeSelectorTab: React.FC<ShapeSelectorTabProps> = ({
           const simColor = simulateCVD(item.color, cvdMode);
           const simFill = item.fill ? simulateCVD(item.fill, cvdMode) : simColor;
           const isFillable = item.pch >= 21 && item.pch <= 25;
-          const shapeDef = PCH_SHAPES.find(p => p.pch === item.pch);
 
           return (
             <div
               key={`shape-${index}`}
-              className="flex items-center gap-2 p-1.5 rounded bg-white border border-slate-200 text-xs"
+              className="flex items-center gap-2 p-1.5 rounded bg-white border border-slate-200 text-xs shadow-2xs"
             >
               {/* Shape Icon Button to toggle pch selector */}
               <button
                 type="button"
                 onClick={() => setActiveShapeIndex(activeShapeIndex === index ? null : index)}
                 className="flex items-center gap-1 bg-slate-50 border border-slate-200 hover:border-blue-400 rounded px-1.5 py-0.5 cursor-pointer shrink-0"
-                title={`${shapeDef?.name || `pch ${item.pch}`}: Click to change symbol`}
+                title={`pch ${item.pch}: Click to change symbol`}
               >
                 <ShapeIcon
                   pch={item.pch}
@@ -145,7 +144,7 @@ export const ShapeSelectorTab: React.FC<ShapeSelectorTabProps> = ({
                   fill={simFill}
                   strokeWidth={1.5}
                 />
-                <span className="font-mono text-[10px] text-slate-600">
+                <span className="font-mono text-[10px] text-slate-600 font-semibold">
                   {item.pch}
                 </span>
                 <ChevronDown size={10} className="text-slate-400" />
@@ -221,7 +220,7 @@ export const ShapeSelectorTab: React.FC<ShapeSelectorTabProps> = ({
                   onClick={() => handleUpdatePch(activeShapeIndex, shape.pch)}
                   className={`flex flex-col items-center justify-center p-1 rounded border transition-colors cursor-pointer ${
                     isActive
-                      ? 'bg-blue-50 border-blue-400'
+                      ? 'bg-blue-50 border-blue-400 shadow-xs'
                       : 'bg-white border-slate-200 hover:border-slate-300'
                   }`}
                   title={`pch=${shape.pch}: ${shape.name}`}

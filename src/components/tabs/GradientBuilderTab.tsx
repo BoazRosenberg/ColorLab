@@ -1,7 +1,8 @@
 import React from 'react';
-import { Plus, Trash2, ArrowRight, ArrowUp, ArrowDown, ArrowRightLeft } from 'lucide-react';
+import { Plus, X, ArrowRight, ArrowLeft, ArrowRightLeft, Minus } from 'lucide-react';
 import { CVDMode } from '../../types/palette';
 import { simulateCVD } from '../../utils/cvd';
+import { interpolatePair } from '../../utils/interpolation';
 
 export interface GradientAnchorItem {
   id: string;
@@ -26,8 +27,8 @@ export const GradientBuilderTab: React.FC<GradientBuilderTabProps> = ({
   onImportToCustom,
 }) => {
   const handleAddAnchor = () => {
-    const defaultHexes = ['#1E3A8A', '#0284C7', '#10B981', '#F59E0B', '#EF4444', '#7C3AED'];
-    const nextHex = defaultHexes[anchors.length % defaultHexes.length] || '#059669';
+    const defaultHexes = ['#440154', '#21908C', '#FDE725', '#F59E0B', '#EF4444', '#7C3AED'];
+    const nextHex = defaultHexes[anchors.length % defaultHexes.length] || '#10B981';
 
     const newAnchor: GradientAnchorItem = {
       id: `anchor-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
@@ -38,7 +39,8 @@ export const GradientBuilderTab: React.FC<GradientBuilderTabProps> = ({
     setAnchors([...anchors, newAnchor]);
   };
 
-  const handleDeleteAnchor = (id: string) => {
+  const handleDeleteAnchor = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
     if (anchors.length <= 2) return;
     setAnchors(anchors.filter(a => a.id !== id));
   };
@@ -49,30 +51,16 @@ export const GradientBuilderTab: React.FC<GradientBuilderTabProps> = ({
     );
   };
 
-  const handleUpdateSteps = (id: string, steps: number) => {
-    const safeSteps = Math.max(1, Math.min(8, steps));
+  const handleStepDelta = (id: string, delta: number) => {
     setAnchors(
-      anchors.map(a => (a.id === id ? { ...a, stepsToNext: safeSteps } : a))
+      anchors.map(a => {
+        if (a.id === id) {
+          const nextVal = Math.max(1, Math.min(8, (a.stepsToNext || 2) + delta));
+          return { ...a, stepsToNext: nextVal };
+        }
+        return a;
+      })
     );
-  };
-
-  // Reorder functions: Move Up / Move Down
-  const handleMoveUp = (index: number) => {
-    if (index <= 0) return;
-    const copy = [...anchors];
-    const temp = copy[index - 1];
-    copy[index - 1] = copy[index];
-    copy[index] = temp;
-    setAnchors(copy);
-  };
-
-  const handleMoveDown = (index: number) => {
-    if (index >= anchors.length - 1) return;
-    const copy = [...anchors];
-    const temp = copy[index + 1];
-    copy[index + 1] = copy[index];
-    copy[index] = temp;
-    setAnchors(copy);
   };
 
   const handleReverseAnchors = () => {
@@ -83,24 +71,24 @@ export const GradientBuilderTab: React.FC<GradientBuilderTabProps> = ({
     <div className="space-y-2.5">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <span className="text-xs font-medium text-slate-700">
-          Anchors ({anchors.length}) · Steps ({interpolatedColors.length})
+        <span className="text-xs font-semibold text-slate-800">
+          Anchors & Steps ({anchors.length} anchors · {interpolatedColors.length} steps)
         </span>
 
         <div className="flex items-center gap-1">
           <button
             onClick={handleReverseAnchors}
-            title="Reverse anchor order"
+            title="Reverse order"
             className="p-1 rounded bg-white hover:bg-slate-50 text-slate-600 border border-slate-200 transition-colors cursor-pointer"
           >
-            <ArrowRightLeft size={12} />
+            <ArrowRightLeft size={11} />
           </button>
 
           <button
             onClick={handleAddAnchor}
-            disabled={anchors.length >= 8}
+            disabled={anchors.length >= 7}
             className={`flex items-center gap-1 text-[11px] px-2 py-0.5 rounded bg-blue-600 hover:bg-blue-500 text-white font-medium transition-colors cursor-pointer ${
-              anchors.length >= 8 ? 'opacity-40 cursor-not-allowed' : ''
+              anchors.length >= 7 ? 'opacity-40 cursor-not-allowed' : ''
             }`}
           >
             <Plus size={12} />
@@ -109,7 +97,101 @@ export const GradientBuilderTab: React.FC<GradientBuilderTabProps> = ({
         </div>
       </div>
 
-      {/* Continuous gradient strip */}
+      {/* Visual Sequence: Big Anchor Squares with Small Intermediate Step Squares & Numeric Clickers */}
+      <div className="p-2 bg-slate-50 border border-slate-200 rounded-lg overflow-x-auto">
+        <div className="flex items-center gap-2 min-w-max">
+          {anchors.map((anchor, idx) => {
+            const simHex = simulateCVD(anchor.hex, cvdMode);
+            const isLast = idx === anchors.length - 1;
+            const nextAnchor = !isLast ? anchors[idx + 1] : null;
+
+            // Generate intermediate step colors between this anchor and next
+            const stepCount = anchor.stepsToNext || 2;
+            const intermediateColors: string[] = [];
+            if (nextAnchor) {
+              for (let s = 1; s <= stepCount; s++) {
+                const t = s / (stepCount + 1);
+                intermediateColors.push(interpolatePair(anchor.hex, nextAnchor.hex, t));
+              }
+            }
+
+            return (
+              <React.Fragment key={anchor.id}>
+                {/* Big Anchor Square */}
+                <div className="group relative flex flex-col items-center">
+                  <div
+                    style={{ backgroundColor: simHex }}
+                    className="w-11 h-11 rounded-md border-2 border-slate-800 shadow-sm relative flex items-center justify-center cursor-pointer overflow-hidden"
+                    title={`Anchor K${idx + 1}: ${anchor.hex}`}
+                  >
+                    <input
+                      type="color"
+                      value={anchor.hex}
+                      onChange={(e) => handleUpdateHex(anchor.id, e.target.value)}
+                      className="opacity-0 absolute inset-0 w-full h-full cursor-pointer"
+                    />
+
+                    {anchors.length > 2 && (
+                      <button
+                        onClick={(e) => handleDeleteAnchor(anchor.id, e)}
+                        className="absolute top-0.5 right-0.5 w-3.5 h-3.5 rounded-full bg-slate-900/80 hover:bg-red-600 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer shadow-xs"
+                        title="Remove anchor"
+                      >
+                        <X size={9} />
+                      </button>
+                    )}
+                  </div>
+                  <span className="text-[10px] font-mono font-semibold text-slate-700 mt-1">
+                    K{idx + 1}
+                  </span>
+                </div>
+
+                {/* Between adjacent anchors: Numeric Clicker Box & Small Intermediate Squares */}
+                {!isLast && (
+                  <div className="flex flex-col items-center px-1">
+                    {/* Compact Number Clicker */}
+                    <div className="flex items-center border border-slate-300 rounded bg-white shadow-2xs">
+                      <button
+                        onClick={() => handleStepDelta(anchor.id, -1)}
+                        disabled={stepCount <= 1}
+                        className={`p-1 text-slate-500 hover:text-slate-900 ${stepCount <= 1 ? 'opacity-20' : 'cursor-pointer'}`}
+                        title="Decrease steps"
+                      >
+                        <Minus size={9} />
+                      </button>
+                      <span className="w-4 text-center font-mono font-semibold text-[10px] text-slate-800 select-none">
+                        {stepCount}
+                      </span>
+                      <button
+                        onClick={() => handleStepDelta(anchor.id, 1)}
+                        disabled={stepCount >= 6}
+                        className={`p-1 text-slate-500 hover:text-slate-900 ${stepCount >= 6 ? 'opacity-20' : 'cursor-pointer'}`}
+                        title="Increase steps"
+                      >
+                        <Plus size={9} />
+                      </button>
+                    </div>
+
+                    {/* Small interpolated preview squares */}
+                    <div className="flex items-center gap-1 mt-1.5">
+                      {intermediateColors.map((intHex, sIdx) => (
+                        <div
+                          key={`step-${idx}-${sIdx}`}
+                          style={{ backgroundColor: simulateCVD(intHex, cvdMode) }}
+                          className="w-3.5 h-3.5 rounded-xs border border-slate-300 shadow-2xs"
+                          title={`Step ${sIdx + 1}: ${intHex}`}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </React.Fragment>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Continuous Gradient Ribbon */}
       <div
         className="h-6 w-full rounded border border-slate-200 shadow-2xs"
         style={{
@@ -117,123 +199,13 @@ export const GradientBuilderTab: React.FC<GradientBuilderTabProps> = ({
         }}
       />
 
-      {/* Discrete Interpolated Steps preview */}
-      <div className="h-6 w-full rounded border border-slate-200 overflow-hidden flex shadow-2xs">
-        {interpolatedColors.map((hex, i) => {
-          const simHex = simulateCVD(hex, cvdMode);
-          return (
-            <div
-              key={`interp-bar-${i}-${hex}`}
-              style={{ backgroundColor: simHex }}
-              className="flex-1 h-full cursor-pointer relative group transition-colors"
-              title={`Step ${i + 1}: ${hex}`}
-            />
-          );
-        })}
-      </div>
-
-      {/* Anchor List with Reordering (Up/Down) & Asymmetric steps */}
-      <div className="space-y-1.5 max-h-[260px] overflow-y-auto pr-0.5">
-        {anchors.map((anchor, idx) => {
-          const simHex = simulateCVD(anchor.hex, cvdMode);
-          const isFirst = idx === 0;
-          const isLast = idx === anchors.length - 1;
-
-          return (
-            <div key={anchor.id} className="space-y-1">
-              <div className="flex items-center gap-2 p-1.5 rounded bg-white border border-slate-200 text-xs">
-                {/* Reorder controls: Up / Down arrows */}
-                <div className="flex flex-col gap-0.5 shrink-0">
-                  <button
-                    onClick={() => handleMoveUp(idx)}
-                    disabled={isFirst}
-                    className={`p-0.5 rounded hover:bg-slate-100 text-slate-500 ${isFirst ? 'opacity-20 cursor-not-allowed' : 'cursor-pointer'}`}
-                    title="Move anchor earlier"
-                  >
-                    <ArrowUp size={10} />
-                  </button>
-                  <button
-                    onClick={() => handleMoveDown(idx)}
-                    disabled={isLast}
-                    className={`p-0.5 rounded hover:bg-slate-100 text-slate-500 ${isLast ? 'opacity-20 cursor-not-allowed' : 'cursor-pointer'}`}
-                    title="Move anchor later"
-                  >
-                    <ArrowDown size={10} />
-                  </button>
-                </div>
-
-                {/* Color preview square & picker */}
-                <div className="relative shrink-0 flex items-center">
-                  <div
-                    style={{ backgroundColor: simHex }}
-                    className="w-6 h-6 rounded border border-slate-300 shadow-2xs"
-                  />
-                  <input
-                    type="color"
-                    value={anchor.hex}
-                    onChange={(e) => handleUpdateHex(anchor.id, e.target.value)}
-                    className="w-5 h-5 ml-1 p-0 border-0 bg-transparent rounded cursor-pointer"
-                    title="Change color"
-                  />
-                </div>
-
-                {/* Hex input */}
-                <input
-                  type="text"
-                  value={anchor.hex}
-                  onChange={(e) => handleUpdateHex(anchor.id, e.target.value)}
-                  maxLength={7}
-                  className="w-20 bg-slate-50 border border-slate-200 rounded px-1.5 py-0.5 text-[11px] font-mono text-slate-900 uppercase"
-                />
-
-                <span className="flex-1 font-mono text-[10px] text-slate-400">
-                  K{idx + 1}
-                </span>
-
-                {/* Delete button */}
-                <button
-                  onClick={() => handleDeleteAnchor(anchor.id)}
-                  disabled={anchors.length <= 2}
-                  className={`p-1 rounded text-slate-400 hover:text-red-500 ${
-                    anchors.length <= 2 ? 'opacity-20 cursor-not-allowed' : 'cursor-pointer'
-                  }`}
-                  title="Remove anchor"
-                >
-                  <Trash2 size={12} />
-                </button>
-              </div>
-
-              {/* Asymmetric step connector */}
-              {!isLast && (
-                <div className="ml-6 pl-3 border-l border-slate-200 py-0.5 flex items-center justify-between text-[11px] text-slate-500">
-                  <div className="flex items-center gap-1.5">
-                    <span>Steps to K{idx + 2}:</span>
-                    <span className="font-mono font-semibold text-slate-800">
-                      {anchor.stepsToNext}
-                    </span>
-                  </div>
-                  <input
-                    type="range"
-                    min={1}
-                    max={6}
-                    value={anchor.stepsToNext}
-                    onChange={(e) => handleUpdateSteps(anchor.id, parseInt(e.target.value, 10))}
-                    className="w-20 accent-blue-600 h-1 bg-slate-200 rounded cursor-pointer"
-                  />
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-
       {/* Import to Custom Palette Button */}
       <button
         onClick={() => onImportToCustom(interpolatedColors)}
         title="Send interpolated gradient colors into Tab 1 as editable swatches"
         className="w-full flex items-center justify-center gap-1.5 py-1.5 px-3 rounded bg-slate-900 hover:bg-slate-800 text-white text-xs font-medium transition-colors cursor-pointer"
       >
-        <span>Import {interpolatedColors.length} Steps to Custom</span>
+        <span>Import {interpolatedColors.length} Colors to Custom</span>
         <ArrowRight size={12} />
       </button>
     </div>
