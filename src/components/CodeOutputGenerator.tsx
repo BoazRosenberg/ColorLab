@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Copy, Check, Terminal } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import { ColorSwatch, PresetPalette, ShapeAssignment, ActiveTab } from '../types/palette';
+import { ColorSwatch, PresetPalette, ActiveTab, ShapeAssignment } from '../types/palette';
 
 interface CodeOutputGeneratorProps {
   activeTab: ActiveTab;
@@ -15,7 +15,7 @@ interface CodeOutputGeneratorProps {
   trimEnd: number;
   gradientAnchors: Array<{ hex: string; stepsToNext: number }>;
   interpolatedGradientColors: string[];
-  shapes: ShapeAssignment[];
+  shapes?: ShapeAssignment[];
 }
 
 export const CodeOutputGenerator: React.FC<CodeOutputGeneratorProps> = ({
@@ -26,18 +26,16 @@ export const CodeOutputGenerator: React.FC<CodeOutputGeneratorProps> = ({
   presetN,
   sampledPresetColors,
   isPruned,
-  trimStart,
-  trimEnd,
   gradientAnchors,
   interpolatedGradientColors,
-  shapes,
+  shapes = [],
 }) => {
   const [copied, setCopied] = useState(false);
-  // Preset mode can toggle between ggplot (default) and vector
   const [presetCodeMode, setPresetCodeMode] = useState<'ggplot' | 'vector'>('ggplot');
+  const [gradientCodeMode, setGradientCodeMode] = useState<'discrete' | 'vector' | 'continuous'>('discrete');
 
   const generateRCode = (): string => {
-    // Tab 1: Custom Palette -> Default is clean vector output!
+    // Tab 1: Custom Palette -> Default is clean vector output
     if (activeTab === 'custom') {
       if (showNaming) {
         const vectorItems = customSwatches.map((s, i) => {
@@ -51,9 +49,24 @@ export const CodeOutputGenerator: React.FC<CodeOutputGeneratorProps> = ({
       return `c(${customSwatches.map(s => `"${s.hex}"`).join(', ')})`;
     }
 
-    // Tab 2: Presets -> Default is ggplot layer code, can toggle to vector
+    // Tab 2: Presets -> Uses native R preset functions (palette.colors, brewer, viridis) instead of raw hexes
     if (activeTab === 'preset') {
       if (presetCodeMode === 'vector') {
+        if (!isPruned) {
+          if (selectedPreset.id === 'okabe_ito') {
+            return `palette.colors(n = ${presetN}, palette = "Okabe-Ito")`;
+          }
+          if (selectedPreset.id === 'tableau10') {
+            return `palette.colors(n = ${presetN}, palette = "Tableau 10")`;
+          }
+          if (selectedPreset.category === 'viridis') {
+            const func = selectedPreset.id === 'viridis' ? 'viridis' : selectedPreset.id;
+            return `viridis::${func}(${presetN})`;
+          }
+          if (selectedPreset.category.startsWith('brewer')) {
+            return `RColorBrewer::brewer.pal(n = ${presetN}, name = "${selectedPreset.name}")`;
+          }
+        }
         return `c(${sampledPresetColors.map(c => `"${c}"`).join(', ')})`;
       }
 
@@ -64,10 +77,18 @@ export const CodeOutputGenerator: React.FC<CodeOutputGeneratorProps> = ({
       return selectedPreset.rScaleColor;
     }
 
-    // Tab 3: Gradient Builder -> Default is scale_color_gradientn
+    // Tab 3: Gradient Builder -> Recognizes ALL colors (anchors + steps)
     if (activeTab === 'gradient') {
-      const anchorHexes = gradientAnchors.map(a => `"${a.hex}"`).join(', ');
-      return `scale_color_gradientn(colors = c(${anchorHexes}))`;
+      if (gradientCodeMode === 'discrete') {
+        return `scale_color_manual(values = c(${interpolatedGradientColors.map(c => `"${c}"`).join(', ')}))`;
+      }
+      if (gradientCodeMode === 'vector') {
+        return `c(${interpolatedGradientColors.map(c => `"${c}"`).join(', ')})`;
+      }
+      if (gradientCodeMode === 'continuous') {
+        const anchorHexes = gradientAnchors.map(a => `"${a.hex}"`).join(', ');
+        return `scale_color_gradientn(colors = c(${anchorHexes}))`;
+      }
     }
 
     // Tab 4: Shapes -> ggplot shape + color scale layers
@@ -143,6 +164,39 @@ export const CodeOutputGenerator: React.FC<CodeOutputGeneratorProps> = ({
             </div>
           )}
 
+          {/* Gradient tab toggle for discrete (all colors) vs vector vs continuous */}
+          {activeTab === 'gradient' && (
+            <div className="flex bg-slate-100 p-0.5 rounded text-[10px] font-medium border border-slate-200">
+              <button
+                onClick={() => setGradientCodeMode('discrete')}
+                title={`Discrete scale using all ${interpolatedGradientColors.length} interpolated colors`}
+                className={`px-1.5 py-0.5 rounded cursor-pointer ${
+                  gradientCodeMode === 'discrete' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500'
+                }`}
+              >
+                manual ({interpolatedGradientColors.length})
+              </button>
+              <button
+                onClick={() => setGradientCodeMode('vector')}
+                title={`R vector c(...) of all ${interpolatedGradientColors.length} colors`}
+                className={`px-1.5 py-0.5 rounded cursor-pointer ${
+                  gradientCodeMode === 'vector' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500'
+                }`}
+              >
+                vector
+              </button>
+              <button
+                onClick={() => setGradientCodeMode('continuous')}
+                title="Continuous scale_color_gradientn using anchor keypoints"
+                className={`px-1.5 py-0.5 rounded cursor-pointer ${
+                  gradientCodeMode === 'continuous' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500'
+                }`}
+              >
+                gradientn
+              </button>
+            </div>
+          )}
+
           <button
             onClick={handleCopy}
             className={`flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium transition-colors cursor-pointer border ${
@@ -158,10 +212,9 @@ export const CodeOutputGenerator: React.FC<CodeOutputGeneratorProps> = ({
         </div>
       </div>
 
-      {/* Code preview block */}
-      <pre className="bg-slate-50 border border-slate-200 rounded p-2 text-[11px] font-mono text-slate-900 overflow-x-auto whitespace-pre leading-relaxed select-all">
-        {codeText}
-      </pre>
+      <div className="bg-slate-900 text-slate-100 font-mono text-[11px] p-2 rounded-md overflow-x-auto select-all leading-relaxed whitespace-pre-wrap break-all shadow-inner">
+        <code>{codeText}</code>
+      </div>
     </div>
   );
 };

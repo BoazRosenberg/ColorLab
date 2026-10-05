@@ -93,18 +93,21 @@ export function buildAsymmetricRamp(anchors: AsymmetricAnchor[]): string[] {
   for (let i = 0; i < anchors.length - 1; i++) {
     const current = anchors[i];
     const next = anchors[i + 1];
-    const steps = Math.max(1, current.stepsToNext || 3);
+    const steps = Math.max(0, current.stepsToNext ?? 2);
 
     // Add current anchor if first segment
     if (i === 0) {
       palette.push(current.hex);
     }
 
-    // Add intermediate steps and next anchor
+    // Add exact number of intermediate step colors
     for (let s = 1; s <= steps; s++) {
-      const t = s / steps;
+      const t = s / (steps + 1);
       palette.push(interpolatePair(current.hex, next.hex, t));
     }
+
+    // Add next anchor
+    palette.push(next.hex);
   }
 
   return palette;

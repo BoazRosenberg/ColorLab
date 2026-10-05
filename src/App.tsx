@@ -8,63 +8,69 @@ import { Palette, Sparkles, Sliders, Shapes } from 'lucide-react';
 import { CVDMode, ColorSwatch, PresetPalette, ShapeAssignment, ActiveTab } from './types/palette';
 import { PRESET_PALETTES } from './utils/presets';
 import { sampleWithEdgePruning, buildAsymmetricRamp } from './utils/interpolation';
+import { RStudioShell } from './components/RStudioShell';
 import { HeaderAccessibilityBar } from './components/HeaderAccessibilityBar';
-import { PlotPreviewer } from './components/PlotPreviewer';
-import { CodeOutputGenerator } from './components/CodeOutputGenerator';
 import { CustomPaletteTab } from './components/tabs/CustomPaletteTab';
 import { PresetPalettesTab } from './components/tabs/PresetPalettesTab';
 import { GradientBuilderTab, GradientAnchorItem } from './components/tabs/GradientBuilderTab';
 import { ShapeSelectorTab } from './components/tabs/ShapeSelectorTab';
-import { RPackageViewerModal } from './components/RPackageViewerModal';
-import { RStudioShell } from './components/RStudioShell';
+import { PlotPreviewer } from './components/PlotPreviewer';
+import { CodeOutputGenerator } from './components/CodeOutputGenerator';
 import { LearnrExercise } from './components/LearnrExercise';
+import { RPackageViewerModal } from './components/RPackageViewerModal';
 
 export default function App() {
-  // Global Accessibility & View State (Light, minimal theme)
-  const [cvdMode, setCvdMode] = useState<CVDMode>('normal');
-  const [colorblindSafeOnly, setColorblindSafeOnly] = useState<boolean>(false);
-  const [viewMode, setViewMode] = useState<'split_ide' | 'narrow_pane' | 'package_inspector'>('split_ide');
-  const [isPackageModalOpen, setIsPackageModalOpen] = useState<boolean>(false);
-
-  // Active Tab: 1. Custom, 2. Preset, 3. Gradient, 4. Shapes
+  // Navigation: 4 clean tabs
   const [activeTab, setActiveTab] = useState<ActiveTab>('custom');
 
-  // Tab 1: Custom Palette State (starts with clean default swatches, naming folded)
-  const [customSwatches, setCustomSwatches] = useState<ColorSwatch[]>([
-    { id: 'swatch-1', hex: '#2C3E50', name: 'c1' },
-    { id: 'swatch-2', hex: '#E74C3C', name: 'c2' },
-    { id: 'swatch-3', hex: '#F1C40F', name: 'c3' },
-    { id: 'swatch-4', hex: '#27AE60', name: 'c4' },
-  ]);
-  const [showNaming, setShowNaming] = useState<boolean>(false);
+  // RStudio Pane view mode (Pane vs Standalone Window)
+  const [viewMode, setViewMode] = useState<'pane' | 'standalone'>('pane');
 
-  // Tab 2: Preset Palettes State (Qualitative default)
-  const [selectedPreset, setSelectedPreset] = useState<PresetPalette>(PRESET_PALETTES[6]); // Okabe-Ito (qualitative)
+  // Accessibility State (Default: normal vision)
+  const [cvdMode, setCvdMode] = useState<CVDMode>('normal');
+  const [colorblindSafeOnly, setColorblindSafeOnly] = useState(false);
+
+  // Tab 1: Custom Palette State (non-destructive, default no names)
+  const [customSwatches, setCustomSwatches] = useState<ColorSwatch[]>([
+    { id: '1', hex: '#2C3E50', name: 'c1' },
+    { id: '2', hex: '#E74C3C', name: 'c2' },
+    { id: '3', hex: '#F1C40F', name: 'c3' },
+    { id: '4', hex: '#27AE60', name: 'c4' },
+  ]);
+  const [showNaming, setShowNaming] = useState(false);
+
+  // Tab 2: Preset Palettes State (Defaults to Okabe-Ito gold standard)
+  const [selectedPreset, setSelectedPreset] = useState<PresetPalette>(
+    PRESET_PALETTES.find(p => p.id === 'okabe_ito') || PRESET_PALETTES[0]
+  );
   const [presetN, setPresetN] = useState<number>(5);
   const [trimStart, setTrimStart] = useState<number>(0);
   const [trimEnd, setTrimEnd] = useState<number>(100);
 
-  // Tab 3: Gradient / Custom Interpolation Builder State
+  // Tab 3: Multi-Anchor Gradient State
   const [gradientAnchors, setGradientAnchors] = useState<GradientAnchorItem[]>([
-    { id: 'a1', hex: '#2C3E50', name: 'K1', stepsToNext: 3 },
-    { id: 'a2', hex: '#E74C3C', name: 'K2', stepsToNext: 3 },
-    { id: 'a3', hex: '#F1C40F', name: 'K3', stepsToNext: 3 },
+    { id: 'a1', hex: '#2C3E50', name: 'K1', stepsToNext: 2 },
+    { id: 'a2', hex: '#E74C3C', name: 'K2', stepsToNext: 2 },
+    { id: 'a3', hex: '#F1C40F', name: 'K3', stepsToNext: 2 },
   ]);
 
-  // Tab 4: ggplot Shape Selector State (mapped to palette colors)
+  // Tab 4: ggplot Shapes State
   const [shapes, setShapes] = useState<ShapeAssignment[]>([
-    { pch: 16, color: '#2C3E50', label: 'Class 1' },
-    { pch: 17, color: '#E74C3C', label: 'Class 2' },
-    { pch: 15, color: '#F1C40F', label: 'Class 3' },
-    { pch: 18, color: '#27AE60', label: 'Class 4' },
+    { pch: 21, color: '#0F172A', fill: '#3B82F6', label: 'g1' },
+    { pch: 22, color: '#0F172A', fill: '#10B981', label: 'g2' },
+    { pch: 24, color: '#0F172A', fill: '#F59E0B', label: 'g3' },
+    { pch: 25, color: '#0F172A', fill: '#8B5CF6', label: 'g4' },
   ]);
+
+  // Modal: R Package Source Inspector & Zip Download
+  const [isPackageModalOpen, setIsPackageModalOpen] = useState(false);
 
   // Sampled colors for preset tab
   const sampledPresetColors = useMemo(() => {
     return sampleWithEdgePruning(selectedPreset.colors, presetN, trimStart, trimEnd);
   }, [selectedPreset, presetN, trimStart, trimEnd]);
 
-  // Interpolated colors for gradient builder tab
+  // Interpolated colors for gradient builder tab (EXACTLY anchors + intermediate steps)
   const interpolatedGradientColors = useMemo(() => {
     return buildAsymmetricRamp(gradientAnchors);
   }, [gradientAnchors]);
@@ -113,7 +119,7 @@ export default function App() {
       onOpenPackageModal={() => setIsPackageModalOpen(true)}
       activeTabLabel={tabLabels[activeTab]}
     >
-      {/* 1. Global Accessibility Bar (Minimalist white header with folded CVD) */}
+      {/* 1. Global Accessibility Bar */}
       <HeaderAccessibilityBar
         cvdMode={cvdMode}
         setCvdMode={setCvdMode}
@@ -226,12 +232,12 @@ export default function App() {
         )}
       </div>
 
-      {/* 4. Live ggplot2 Plot Previewer (Clean White) */}
+      {/* 4. Live ggplot2 Plot Previewer (Automatically switches to scatter for shapes!) */}
       <div className="px-2.5 pb-2">
         <PlotPreviewer
           colors={activePaletteColors}
           cvdMode={cvdMode}
-          shapes={activeTab === 'shapes' ? shapes : undefined}
+          shapes={shapes}
           activeTab={activeTab}
         />
       </div>
@@ -265,7 +271,7 @@ export default function App() {
                   ? `scale_color_manual(values = c(${sampledPresetColors.map(c => `"${c}"`).join(', ')}))`
                   : selectedPreset.rScaleColor)
               : activeTab === 'gradient'
-              ? `scale_color_gradientn(colors = c(${gradientAnchors.map(a => `"${a.hex}"`).join(', ')}))`
+              ? `scale_color_manual(values = c(${interpolatedGradientColors.map(c => `"${c}"`).join(', ')}))`
               : `scale_shape_manual(values = c(${shapes.map(s => s.pch).join(', ')})) + scale_color_manual(values = c(${shapes.map(s => `"${s.color}"`).join(', ')}))`
           }
         />

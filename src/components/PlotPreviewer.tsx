@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { CVDMode, ShapeAssignment } from '../types/palette';
 import { simulateCVD } from '../utils/cvd';
 import { ShapeIcon } from './ShapeIcon';
@@ -10,56 +10,29 @@ interface PlotPreviewerProps {
   activeTab: string;
 }
 
-const SCATTER_POINTS = [
-  // Group 0
-  { x: 1.4, y: 0.2, group: 0 },
-  { x: 1.5, y: 0.3, group: 0 },
-  { x: 1.3, y: 0.2, group: 0 },
-  { x: 1.7, y: 0.4, group: 0 },
-  { x: 1.9, y: 0.4, group: 0 },
-  { x: 1.4, y: 0.3, group: 0 },
-  // Group 1
-  { x: 3.5, y: 1.0, group: 1 },
-  { x: 4.0, y: 1.3, group: 1 },
-  { x: 4.5, y: 1.5, group: 1 },
-  { x: 3.9, y: 1.1, group: 1 },
-  { x: 4.2, y: 1.3, group: 1 },
-  { x: 3.6, y: 1.0, group: 1 },
-  // Group 2
-  { x: 5.1, y: 1.9, group: 2 },
-  { x: 5.6, y: 2.1, group: 2 },
-  { x: 5.9, y: 2.3, group: 2 },
-  { x: 5.1, y: 1.8, group: 2 },
-  { x: 6.0, y: 2.5, group: 2 },
-  { x: 5.5, y: 2.1, group: 2 },
-  // Group 3
-  { x: 2.6, y: 0.8, group: 3 },
-  { x: 2.9, y: 0.9, group: 3 },
-  { x: 3.1, y: 0.7, group: 3 },
-  // Group 4
-  { x: 4.8, y: 2.4, group: 4 },
-  { x: 4.6, y: 2.2, group: 4 },
-  // Group 5
-  { x: 6.2, y: 1.6, group: 5 },
-  { x: 6.5, y: 1.8, group: 5 },
-];
-
 export const PlotPreviewer: React.FC<PlotPreviewerProps> = ({
   colors,
   cvdMode,
   shapes,
   activeTab,
 }) => {
-  const [plotType, setPlotType] = useState<'scatter' | 'bars'>('scatter');
+  const [plotType, setPlotType] = useState<'bars' | 'scatter'>('bars');
+
+  // Automatically switch to scatter plot when viewing shapes, because bar plots cannot show point shapes
+  useEffect(() => {
+    if (activeTab === 'shapes') {
+      setPlotType('scatter');
+    }
+  }, [activeTab]);
 
   const safeColors = colors.length > 0 ? colors : ['#3B82F6'];
   const simulatedColors = safeColors.map(c => simulateCVD(c, cvdMode));
 
-  // Clean white canvas dimensions
+  // Canvas dimensions
   const width = 380;
   const height = 180;
   const padLeft = 32;
-  const padRight = 72;
+  const padRight = (shapes && shapes.length > 0) || simulatedColors.length > 6 ? 84 : 64;
   const padTop = 14;
   const padBottom = 24;
   const plotWidth = width - padLeft - padRight;
@@ -73,16 +46,56 @@ export const PlotPreviewer: React.FC<PlotPreviewerProps> = ({
   const mapX = (val: number) => padLeft + ((val - minX) / (maxX - minX)) * plotWidth;
   const mapY = (val: number) => padTop + plotHeight - ((val - minY) / (maxY - minY)) * plotHeight;
 
-  const activeGroupCount = Math.max(1, safeColors.length);
-  const visiblePoints = SCATTER_POINTS.filter(p => p.group < activeGroupCount);
+  // Generate deterministic, realistic scatter points for every single group
+  const groupCount = activeTab === 'shapes' && shapes && shapes.length > 0
+    ? shapes.length
+    : safeColors.length;
+
+  const scatterPoints = useMemo(() => {
+    const pts: Array<{ x: number; y: number; group: number }> = [];
+
+    for (let g = 0; g < groupCount; g++) {
+      const frac = groupCount > 1 ? g / (groupCount - 1) : 0.5;
+      const centerX = 1.5 + frac * 4.6;
+      const centerY = 0.4 + frac * 1.8 + (g % 2 === 0 ? 0.2 : -0.2);
+
+      const offsets = [
+        { dx: -0.18, dy: -0.14 },
+        { dx: 0.14, dy: 0.16 },
+        { dx: -0.09, dy: 0.22 },
+        { dx: 0.19, dy: -0.12 },
+      ];
+
+      offsets.forEach(off => {
+        pts.push({
+          x: Math.max(1.1, Math.min(6.8, centerX + off.dx)),
+          y: Math.max(0.1, Math.min(2.7, centerY + off.dy)),
+          group: g,
+        });
+      });
+    }
+    return pts;
+  }, [groupCount]);
 
   return (
     <div className="bg-white border border-slate-200 rounded-lg p-2.5 shadow-2xs">
-      {/* Minimal Header */}
+      {/* Header */}
       <div className="flex items-center justify-between pb-1.5 mb-1.5 border-b border-slate-100 text-xs">
-        <span className="font-medium text-slate-700">Preview</span>
+        <span className="font-medium text-slate-700">
+          Live Plot Preview {activeTab === 'shapes' ? '(Scatter with shapes)' : `(${safeColors.length} colors)`}
+        </span>
 
         <div className="flex bg-slate-100 rounded p-0.5 text-[10px]">
+          {activeTab !== 'shapes' && (
+            <button
+              onClick={() => setPlotType('bars')}
+              className={`px-2 py-0.5 rounded cursor-pointer ${
+                plotType === 'bars' ? 'bg-white text-slate-900 font-medium shadow-2xs' : 'text-slate-500'
+              }`}
+            >
+              Bars
+            </button>
+          )}
           <button
             onClick={() => setPlotType('scatter')}
             className={`px-2 py-0.5 rounded cursor-pointer ${
@@ -91,18 +104,10 @@ export const PlotPreviewer: React.FC<PlotPreviewerProps> = ({
           >
             Scatter
           </button>
-          <button
-            onClick={() => setPlotType('bars')}
-            className={`px-2 py-0.5 rounded cursor-pointer ${
-              plotType === 'bars' ? 'bg-white text-slate-900 font-medium shadow-2xs' : 'text-slate-500'
-            }`}
-          >
-            Bars
-          </button>
         </div>
       </div>
 
-      {/* SVG Canvas Area (Clean White) */}
+      {/* SVG Canvas Area */}
       <div className="w-full flex justify-center overflow-hidden">
         <svg
           viewBox={`0 0 ${width} ${height}`}
@@ -135,7 +140,7 @@ export const PlotPreviewer: React.FC<PlotPreviewerProps> = ({
             ))}
           </g>
 
-          {/* Minimal Axis lines */}
+          {/* Axes */}
           <line
             x1={padLeft}
             y1={padTop + plotHeight}
@@ -162,7 +167,7 @@ export const PlotPreviewer: React.FC<PlotPreviewerProps> = ({
             textAnchor="middle"
             fontFamily="system-ui, sans-serif"
           >
-            Petal.Length
+            {plotType === 'bars' ? 'Category' : 'Petal.Length'}
           </text>
           <text
             x={11}
@@ -173,50 +178,67 @@ export const PlotPreviewer: React.FC<PlotPreviewerProps> = ({
             transform={`rotate(-90 11 ${padTop + plotHeight / 2})`}
             fontFamily="system-ui, sans-serif"
           >
-            Petal.Width
+            {plotType === 'bars' ? 'Value' : 'Petal.Width'}
           </text>
 
-          {/* Scatter Plot */}
+          {/* Scatter Plot: Renders shapes (pch) when on shapes tab or when assigned */}
           {plotType === 'scatter' && (
             <g>
-              {visiblePoints.map((pt, idx) => {
-                const colorIdx = pt.group % simulatedColors.length;
-                const pointColor = simulatedColors[colorIdx];
-
-                const shapeAssigned = shapes && shapes[colorIdx];
+              {scatterPoints.map((pt, idx) => {
+                const groupIdx = pt.group;
+                const shapeAssigned = shapes && shapes[groupIdx];
                 const pch = shapeAssigned ? shapeAssigned.pch : 16;
+                const rawColor = shapeAssigned ? shapeAssigned.color : safeColors[groupIdx % safeColors.length];
+                const pointColor = simulateCVD(rawColor, cvdMode);
                 const fillCol = shapeAssigned?.fill ? simulateCVD(shapeAssigned.fill, cvdMode) : pointColor;
 
                 const cx = mapX(pt.x);
                 const cy = mapY(pt.y);
 
+                if (shapeAssigned || activeTab === 'shapes') {
+                  return (
+                    <g key={`pt-${idx}`} transform={`translate(${cx - 7}, ${cy - 7})`}>
+                      <ShapeIcon
+                        pch={pch}
+                        size={14}
+                        color={pointColor}
+                        fill={fillCol}
+                        strokeWidth={1.5}
+                      />
+                    </g>
+                  );
+                }
+
                 return (
-                  <g key={`pt-${idx}`} transform={`translate(${cx - 7}, ${cy - 7})`}>
-                    <ShapeIcon
-                      pch={pch}
-                      size={14}
-                      color={pointColor}
-                      fill={fillCol}
-                      strokeWidth={1.5}
-                    />
-                  </g>
+                  <circle
+                    key={`pt-${idx}`}
+                    cx={cx}
+                    cy={cy}
+                    r={3.5}
+                    fill={pointColor}
+                    stroke="#FFFFFF"
+                    strokeWidth={0.8}
+                    opacity={0.9}
+                  />
                 );
               })}
             </g>
           )}
 
-          {/* Bar Chart */}
+          {/* Bar Chart: Only for non-shapes tabs */}
           {plotType === 'bars' && (
             <g>
               {simulatedColors.map((col, idx) => {
                 const barCount = simulatedColors.length;
-                const availableW = plotWidth - 12;
-                const barW = Math.max(8, Math.min(32, availableW / barCount - 4));
-                const totalBarSpan = barCount * (barW + 4);
+                const gap = barCount > 10 ? 1.5 : 3;
+                const totalGaps = (barCount - 1) * gap;
+                const availableW = plotWidth - 8;
+                const barW = Math.max(2.5, Math.min(26, (availableW - totalGaps) / barCount));
+                const totalBarSpan = barCount * barW + totalGaps;
                 const startOffset = padLeft + (plotWidth - totalBarSpan) / 2;
 
-                const barX = startOffset + idx * (barW + 4);
-                const ratios = [0.45, 0.85, 0.65, 0.95, 0.55, 0.75, 0.4, 0.9];
+                const barX = startOffset + idx * (barW + gap);
+                const ratios = [0.45, 0.85, 0.65, 0.95, 0.55, 0.75, 0.4, 0.9, 0.6, 0.8, 0.5, 0.7];
                 const r = ratios[idx % ratios.length];
                 const barH = plotHeight * r * 0.9;
                 const barY = padTop + plotHeight - barH;
@@ -238,34 +260,66 @@ export const PlotPreviewer: React.FC<PlotPreviewerProps> = ({
             </g>
           )}
 
-          {/* Minimal Legend */}
-          <g transform={`translate(${padLeft + plotWidth + 6}, ${padTop + 4})`}>
-            {simulatedColors.slice(0, 6).map((col, i) => {
-              const pch = shapes && shapes[i] ? shapes[i].pch : 16;
-              const fillCol = shapes && shapes[i]?.fill ? simulateCVD(shapes[i].fill!, cvdMode) : col;
-              const yPos = 8 + i * 15;
+          {/* Legend: Displays shapes and colors */}
+          <g transform={`translate(${padLeft + plotWidth + 6}, ${padTop + 2})`}>
+            {activeTab === 'shapes' && shapes
+              ? shapes.map((s, i) => {
+                  const yPos = 6 + i * 15;
+                  const pointColor = simulateCVD(s.color, cvdMode);
+                  const fillCol = s.fill ? simulateCVD(s.fill, cvdMode) : pointColor;
 
-              return (
-                <g key={`leg-${i}`} transform={`translate(0, ${yPos})`}>
-                  <ShapeIcon
-                    pch={pch}
-                    size={10}
-                    color={col}
-                    fill={fillCol}
-                    strokeWidth={1.2}
-                  />
-                  <text
-                    x={14}
-                    y={8}
-                    fill="#475569"
-                    fontSize="8"
-                    fontFamily="monospace"
-                  >
-                    {shapes && shapes[i]?.label ? shapes[i].label.slice(0, 6) : `g${i + 1}`}
-                  </text>
-                </g>
-              );
-            })}
+                  return (
+                    <g key={`leg-s-${i}`} transform={`translate(0, ${yPos})`}>
+                      <ShapeIcon
+                        pch={s.pch}
+                        size={11}
+                        color={pointColor}
+                        fill={fillCol}
+                        strokeWidth={1.2}
+                      />
+                      <text
+                        x={15}
+                        y={8}
+                        fill="#475569"
+                        fontSize="8"
+                        fontFamily="monospace"
+                      >
+                        {s.label || `pch ${s.pch}`}
+                      </text>
+                    </g>
+                  );
+                })
+              : simulatedColors.map((col, i) => {
+                  const maxRows = 10;
+                  const colIdx = Math.floor(i / maxRows);
+                  const rowIdx = i % maxRows;
+                  const xPos = colIdx * 38;
+                  const yPos = 6 + rowIdx * 13;
+
+                  return (
+                    <g key={`leg-${i}`} transform={`translate(${xPos}, ${yPos})`}>
+                      <rect
+                        x={0}
+                        y={0}
+                        width={8}
+                        height={8}
+                        rx={1.5}
+                        fill={col}
+                        stroke="#CBD5E1"
+                        strokeWidth={0.5}
+                      />
+                      <text
+                        x={12}
+                        y={7}
+                        fill="#475569"
+                        fontSize="7.5"
+                        fontFamily="monospace"
+                      >
+                        {`g${i + 1}`}
+                      </text>
+                    </g>
+                  );
+                })}
           </g>
         </svg>
       </div>
