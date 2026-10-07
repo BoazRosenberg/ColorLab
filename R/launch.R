@@ -95,12 +95,12 @@ colorlab <- function(browser = FALSE, port = NULL) {
       url <- sprintf("http://127.0.0.1:%d", .colorlab_env$port)
       if (use_viewer) {
         viewer(url)
-        message("\033[32m\u2714\033[39m ColorLab launched in RStudio Viewer Pane (", url, ")")
+        message("ColorLab launched in RStudio Viewer Pane (", url, ")")
       } else {
         utils::browseURL(url)
-        message("\033[32m\u2714\033[39m ColorLab opened in browser (", url, ")")
+        message("ColorLab opened in browser (", url, ")")
       }
-      message("  Console remains free. Write and execute code while ColorLab is running!")
+      message("Console remains free. Write and execute code while ColorLab is running!")
       return(invisible(url))
     }
   }
@@ -113,11 +113,11 @@ colorlab <- function(browser = FALSE, port = NULL) {
 
   if (use_viewer) {
     viewer(dest_file)
-    message("\033[32m\u2714\033[39m ColorLab launched in RStudio Viewer Pane.")
-    message("  Console remains free. Write and execute code while ColorLab is running!")
+    message("ColorLab launched in RStudio Viewer Pane.")
+    message("Console remains free. Write and execute code while ColorLab is running!")
   } else {
     utils::browseURL(dest_file)
-    message("\033[32m\u2714\033[39m ColorLab opened in default browser.")
+    message("ColorLab opened in default browser.")
   }
 
   invisible(dest_file)
