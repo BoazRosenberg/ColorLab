@@ -1,25 +1,23 @@
 Package: ColorLab
 Title: Interactive Color and Shape Palette Designer for ggplot2
-Version: 0.1.0
+Version: 0.2.0
 Authors@R: person("Boaz", "Rosenberg", email = "boazrsnbrg@gmail.com", role = c("aut", "cre"))
-Description: Provides interactive tools for exploring color and shape combinations in R,
-    using learnr platform for integration in RStudio Tutorial Pane.
+Description: An interactive, modern color palette and ggplot2 shape designer
+    that runs seamlessly in the RStudio Viewer Pane without blocking the R console.
+    Provides custom color ramps, curated presets (Okabe-Ito, ColorBrewer, Viridis),
+    gradient interpolation, color-vision deficiency simulation, and instant R code generation.
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
+RoxygenNote: 7.3.1
 Imports:
-    learnr (>= 0.11.0),
-    shiny (>= 1.8.0),
-    colourpicker (>= 1.3.0),
-    ggplot2 (>= 3.5.0),
-    shinyjs (>= 2.1.0),
-    RColorBrewer (>= 1.1-3),
-    viridis (>= 0.6.5),
-    dplyr (>= 1.1.0)
+    utils
 Suggests:
-    knitr,
-    rmarkdown,
+    httpuv,
+    rstudioapi,
+    ggplot2,
+    RColorBrewer,
+    viridis,
     testthat (>= 3.0.0)
-VignetteBuilder: knitr
 URL: https://github.com/BoazRosenberg/ColorLab
 BugReports: https://github.com/BoazRosenberg/ColorLab/issues

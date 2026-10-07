@@ -5,7 +5,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { Palette, Sparkles, Sliders, Shapes } from 'lucide-react';
-import { CVDMode, ColorSwatch, PresetPalette, ShapeAssignment, ActiveTab } from './types/palette';
+import { CVDMode, ColorSwatch, PresetPalette, ShapeAssignment, ActiveTab, ViewMode } from './types/palette';
 import { PRESET_PALETTES } from './utils/presets';
 import { sampleWithEdgePruning, buildAsymmetricRamp } from './utils/interpolation';
 import { RStudioShell } from './components/RStudioShell';
@@ -23,8 +23,8 @@ export default function App() {
   // Navigation: 4 clean tabs
   const [activeTab, setActiveTab] = useState<ActiveTab>('custom');
 
-  // RStudio Pane view mode (Pane vs Standalone Window)
-  const [viewMode, setViewMode] = useState<'pane' | 'standalone'>('pane');
+  // RStudio Pane view mode (Split IDE vs Standalone Window)
+  const [viewMode, setViewMode] = useState<ViewMode>('split_ide');
 
   // Accessibility State (Default: normal vision)
   const [cvdMode, setCvdMode] = useState<CVDMode>('normal');
