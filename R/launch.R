@@ -3,12 +3,25 @@
 .colorlab_env$server <- NULL
 .colorlab_env$port <- NULL
 
+#' Automatically launch ColorLab when package is loaded
+#' @keywords internal
+.onAttach <- function(libname, pkgname) {
+  if (interactive()) {
+    # Automatically open ColorLab in RStudio Viewer Pane upon library(ColorLab)
+    tryCatch({
+      colorlab()
+    }, error = function(e) {
+      packageStartupMessage("Type colorlab() to open the palette designer in Viewer.")
+    })
+  }
+}
+
 #' Launch ColorLab in RStudio Viewer Pane
 #'
 #' Opens the interactive ColorLab color palette and shape designer in
 #' RStudio's Viewer Pane (or default web browser if outside RStudio).
-#' ColorLab runs asynchronously and does NOT block the R console, so you can
-#' continue writing, executing code, and creating plots while ColorLab is open.
+#' ColorLab runs asynchronously and does not block the R console, so you can
+#' continue writing and executing code while ColorLab is open.
 #'
 #' @param browser Logical. If \code{TRUE}, opens in the system web browser
 #'   instead of the RStudio Viewer pane. Default is \code{FALSE}.
@@ -21,7 +34,7 @@
 #' \dontrun{
 #' library(ColorLab)
 #'
-#' # Launch in RStudio Viewer (console remains active!)
+#' # Launch in RStudio Viewer
 #' colorlab()
 #'
 #' # Or open in external web browser
@@ -34,7 +47,6 @@ colorlab <- function(browser = FALSE, port = NULL) {
     app_file <- system.file("dist", "index.html", package = "ColorLab")
   }
   if (!nzchar(app_file) || !file.exists(app_file)) {
-    # Check current directory during development
     dev_paths <- c(
       file.path(getwd(), "inst", "app", "index.html"),
       file.path(getwd(), "dist", "index.html")
@@ -59,7 +71,6 @@ colorlab <- function(browser = FALSE, port = NULL) {
   use_viewer <- !isTRUE(browser) && !is.null(viewer)
 
   # Check if we should serve via non-blocking background httpuv server:
-  # Preferred on RStudio Server / Posit Cloud, or when a port is specified.
   is_rstudio_server <- nzchar(Sys.getenv("RSTUDIO_HTTP_REFERER")) ||
     nzchar(Sys.getenv("RSTUDIO_SERVER")) ||
     nzchar(Sys.getenv("POSIT_CLOUD"))
@@ -95,12 +106,11 @@ colorlab <- function(browser = FALSE, port = NULL) {
       url <- sprintf("http://127.0.0.1:%d", .colorlab_env$port)
       if (use_viewer) {
         viewer(url)
-        message("ColorLab launched in RStudio Viewer Pane (", url, ")")
+        message("ColorLab launched in RStudio Viewer.")
       } else {
         utils::browseURL(url)
-        message("ColorLab opened in browser (", url, ")")
+        message("ColorLab opened in browser (", url, ").")
       }
-      message("Console remains free. Write and execute code while ColorLab is running!")
       return(invisible(url))
     }
   }
@@ -113,8 +123,7 @@ colorlab <- function(browser = FALSE, port = NULL) {
 
   if (use_viewer) {
     viewer(dest_file)
-    message("ColorLab launched in RStudio Viewer Pane.")
-    message("Console remains free. Write and execute code while ColorLab is running!")
+    message("ColorLab launched in RStudio Viewer.")
   } else {
     utils::browseURL(dest_file)
     message("ColorLab opened in default browser.")
@@ -151,11 +160,5 @@ run_colorlab <- function(...) {
 #' @rdname colorlab
 #' @export
 ColorLab <- function(...) {
-  colorlab(...)
-}
-
-#' @rdname colorlab
-#' @export
-launch_palette_tutorial <- function(...) {
   colorlab(...)
 }

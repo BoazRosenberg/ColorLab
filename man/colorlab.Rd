@@ -5,7 +5,6 @@
 \alias{colorlab_stop}
 \alias{run_colorlab}
 \alias{ColorLab}
-\alias{launch_palette_tutorial}
 \title{Launch ColorLab in RStudio Viewer Pane}
 \usage{
 colorlab(browser = FALSE, port = NULL)
@@ -15,8 +14,6 @@ colorlab_stop()
 run_colorlab(...)
 
 ColorLab(...)
-
-launch_palette_tutorial(...)
 }
 \arguments{
 \item{browser}{Logical. If \code{TRUE}, opens in the default system web browser
@@ -32,21 +29,22 @@ Invisibly returns the local file path or server URL.
 }
 \description{
 Opens the interactive ColorLab color palette and ggplot2 shape designer in
-RStudio's Viewer Pane (or external web browser). ColorLab runs asynchronously
-and does NOT block the R console, allowing you to continue writing and
-executing R code while the tool remains open and interactive.
+RStudio's Viewer Pane (or external web browser). When the package is loaded
+via \code{library(ColorLab)}, it automatically launches into the Viewer pane.
+ColorLab runs asynchronously and does not block the R console.
 }
 \examples{
 \dontrun{
+# Automatically launches on load:
 library(ColorLab)
 
-# Launch in RStudio Viewer Pane (non-blocking)
+# Or launch explicitly anytime:
 colorlab()
 
-# Or open in external browser
+# Or open in external browser:
 colorlab(browser = TRUE)
 
-# Stop background server if started
+# Stop background server if needed:
 colorlab_stop()
 }
 }

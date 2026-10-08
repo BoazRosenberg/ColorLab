@@ -85,18 +85,12 @@ export const GradientBuilderTab: React.FC<GradientBuilderTabProps> = ({
     setAnchors([...anchors].reverse());
   };
 
-  // Exact math: Total colors = anchors count + sum of intermediate steps
-  const totalIntermediateSteps = anchors
-    .slice(0, -1)
-    .reduce((sum, a) => sum + (a.stepsToNext || 0), 0);
-  const totalColors = anchors.length + totalIntermediateSteps;
-
   return (
     <div className="space-y-2.5">
-      {/* Header with clear (anchors + steps = total colors) breakdown */}
+      {/* Header */}
       <div className="flex items-center justify-between">
         <span className="text-xs font-semibold text-slate-800">
-          Anchors & Steps ({anchors.length} anchors + {totalIntermediateSteps} steps = {totalColors} colors)
+          Gradient Anchors
         </span>
 
         <div className="flex items-center gap-1">
@@ -257,7 +251,7 @@ export const GradientBuilderTab: React.FC<GradientBuilderTabProps> = ({
         title="Send interpolated gradient colors into Tab 1 as editable swatches"
         className="w-full flex items-center justify-center gap-1.5 py-1.5 px-3 rounded bg-slate-900 hover:bg-slate-800 text-white text-xs font-medium transition-colors cursor-pointer"
       >
-        <span>Import {totalColors} Colors to Custom</span>
+        <span>Import {interpolatedColors.length} Colors to Custom</span>
         <ArrowRight size={12} />
       </button>
     </div>
