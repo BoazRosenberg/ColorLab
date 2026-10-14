@@ -5,6 +5,7 @@
 \alias{colorlab_stop}
 \alias{run_colorlab}
 \alias{ColorLab}
+\alias{launch_palette_tutorial}
 \title{Launch ColorLab in RStudio Viewer Pane}
 \usage{
 colorlab(browser = FALSE, port = NULL)
@@ -14,6 +15,8 @@ colorlab_stop()
 run_colorlab(...)
 
 ColorLab(...)
+
+launch_palette_tutorial(...)
 }
 \arguments{
 \item{browser}{Logical. If \code{TRUE}, opens in the default system web browser

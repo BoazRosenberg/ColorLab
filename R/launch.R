@@ -162,3 +162,10 @@ run_colorlab <- function(...) {
 ColorLab <- function(...) {
   colorlab(...)
 }
+
+#' Backward compatibility alias for colorlab
+#' @rdname colorlab
+#' @export
+launch_palette_tutorial <- function(...) {
+  colorlab(...)
+}

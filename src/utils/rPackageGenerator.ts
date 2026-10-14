@@ -18,7 +18,6 @@ Description: An interactive, modern color palette and ggplot2 shape designer
     gradient interpolation, color-vision deficiency simulation, and instant R code generation.
 License: MIT + file LICENSE
 Encoding: UTF-8
-LazyData: true
 RoxygenNote: 7.3.1
 Imports:
     utils
@@ -49,6 +48,7 @@ BugReports: https://github.com/BoazRosenberg/ColorLab/issues
 ^\\.gitignore$
 ^\\.aistudio.*$
 ^dist$
+^bun\\.lock$
 `,
   },
   {
@@ -227,6 +227,13 @@ run_colorlab <- function(...) {
 ColorLab <- function(...) {
   colorlab(...)
 }
+
+#' Backward compatibility alias for colorlab
+#' @rdname colorlab
+#' @export
+launch_palette_tutorial <- function(...) {
+  colorlab(...)
+}
 `,
   },
   {
@@ -239,6 +246,7 @@ ColorLab <- function(...) {
 \\alias{colorlab_stop}
 \\alias{run_colorlab}
 \\alias{ColorLab}
+\\alias{launch_palette_tutorial}
 \\title{Launch ColorLab in RStudio Viewer Pane}
 \\usage{
 colorlab(browser = FALSE, port = NULL)
@@ -248,6 +256,8 @@ colorlab_stop()
 run_colorlab(...)
 
 ColorLab(...)
+
+launch_palette_tutorial(...)
 }
 \\arguments{
 \\item{browser}{Logical. If \\code{TRUE}, opens in the default system web browser

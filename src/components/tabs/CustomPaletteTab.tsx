@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Trash2, ArrowRightLeft, Copy } from 'lucide-react';
+import { Plus, Trash2, ArrowRightLeft, Copy, GripVertical, Pipette } from 'lucide-react';
 import { ColorSwatch, CVDMode, NamedCustomPalette } from '../../types/palette';
 import { simulateCVD, shouldUseDarkText } from '../../utils/cvd';
 
@@ -34,6 +34,8 @@ export const CustomPaletteTab: React.FC<CustomPaletteTabProps> = ({
 }) => {
   const activePalette = palettes.find(p => p.id === activePaletteId) || palettes[0];
   const [selectedId, setSelectedId] = useState<string>(swatches[0]?.id || '');
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
   // Active selected swatch
   const activeSwatch = swatches.find(s => s.id === selectedId) || swatches[0];
@@ -94,6 +96,21 @@ export const CustomPaletteTab: React.FC<CustomPaletteTabProps> = ({
   // Reverse swatches
   const handleReverseOrder = () => {
     setSwatches([...swatches].reverse());
+  };
+
+  // Drag and drop reordering
+  const handleDrop = (targetIndex: number) => {
+    if (draggedIndex === null || draggedIndex === targetIndex) {
+      setDraggedIndex(null);
+      setDragOverIndex(null);
+      return;
+    }
+    const newSwatches = [...swatches];
+    const [moved] = newSwatches.splice(draggedIndex, 1);
+    newSwatches.splice(targetIndex, 0, moved);
+    setSwatches(newSwatches);
+    setDraggedIndex(null);
+    setDragOverIndex(null);
   };
 
   return (
@@ -175,12 +192,12 @@ export const CustomPaletteTab: React.FC<CustomPaletteTabProps> = ({
         </div>
       </div>
 
-      {/* 3. Selected Square Controller */}
+      {/* 3. Selected Color Controller */}
       {activeSwatch && (
         <div className="p-2 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <span className="text-[11px] font-bold text-slate-700">
-              Square #{activeIndex + 1}:
+              Color:
             </span>
 
             {/* Selected Color Box Picker */}
@@ -231,54 +248,97 @@ export const CustomPaletteTab: React.FC<CustomPaletteTabProps> = ({
         </div>
       )}
 
-      {/* 4. Squares Container: Color Boxes with Direct Inline Variable Names Underneath */}
+      {/* 4. Squares Container: Color Boxes (Draggable to Reorder) */}
       <div className="flex flex-wrap gap-2.5 py-1 items-start justify-start">
         {swatches.map((swatch, index) => {
           const isSelected = swatch.id === (activeSwatch?.id || '');
+          const isDragging = draggedIndex === index;
+          const isDragOver = dragOverIndex === index && draggedIndex !== index;
           const simmedHex = simulateCVD(swatch.hex, cvdMode);
           const darkText = shouldUseDarkText(simmedHex);
           const textColor = darkText ? '#0F172A' : '#FFFFFF';
 
           return (
-            <div key={swatch.id} className="flex flex-col items-center">
+            <div
+              key={swatch.id}
+              className="flex flex-col items-center"
+              draggable
+              onDragStart={(e) => {
+                setDraggedIndex(index);
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/plain', `${index}`);
+              }}
+              onDragOver={(e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                if (dragOverIndex !== index) {
+                  setDragOverIndex(index);
+                }
+              }}
+              onDragLeave={() => {
+                if (dragOverIndex === index) {
+                  setDragOverIndex(null);
+                }
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                handleDrop(index);
+              }}
+              onDragEnd={() => {
+                setDraggedIndex(null);
+                setDragOverIndex(null);
+              }}
+            >
               {/* Color Box */}
               <div
                 onClick={() => setSelectedId(swatch.id)}
                 style={{ backgroundColor: simmedHex }}
-                className={`w-16 h-16 rounded-lg flex flex-col items-center justify-center cursor-pointer transition-all relative select-none shadow-2xs group ${
-                  isSelected
+                className={`w-16 h-16 rounded-lg flex flex-col items-center justify-center cursor-grab active:cursor-grabbing transition-all relative select-none shadow-2xs group ${
+                  isDragging
+                    ? 'opacity-40 scale-95 border-2 border-dashed border-blue-500 ring-2 ring-blue-300'
+                    : isDragOver
+                    ? 'ring-3 ring-blue-500 ring-offset-2 scale-105 z-20 shadow-md'
+                    : isSelected
                     ? 'ring-3 ring-slate-900 shadow-md scale-105 z-10'
                     : 'border border-slate-300 hover:border-slate-400 hover:scale-102'
                 }`}
-                title={`Square #${index + 1}: ${swatch.hex} (Click to select & edit)`}
+                title={`Color: ${swatch.hex} (Click to select, drag to reorder)`}
               >
-                {/* Native color picker overlaid */}
-                <input
-                  type="color"
-                  value={swatch.hex.startsWith('#') && swatch.hex.length === 7 ? swatch.hex : '#000000'}
-                  onChange={(e) => handleUpdateHex(swatch.id, e.target.value)}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setSelectedId(swatch.id);
-                  }}
-                  className="opacity-0 absolute inset-0 w-full h-full cursor-pointer"
-                />
+                {/* Drag Handle in top-left */}
+                <div
+                  className="absolute top-1 left-1 opacity-35 group-hover:opacity-80 transition-opacity pointer-events-none"
+                  style={{ color: textColor }}
+                  title="Drag to reorder"
+                >
+                  <GripVertical size={11} />
+                </div>
 
                 {/* Hex Label with Contrast Color */}
                 <span
                   style={{ color: textColor }}
-                  className="font-mono font-bold text-[10px] tracking-tight pointer-events-none drop-shadow-2xs"
+                  className="font-mono font-bold text-[10.5px] tracking-tight pointer-events-none drop-shadow-2xs select-none"
                 >
                   {swatch.hex}
                 </span>
 
-                {/* Index indicator */}
-                <span
-                  style={{ color: textColor, opacity: 0.75 }}
-                  className="text-[9px] font-semibold mt-0.5 pointer-events-none"
+                {/* Quick color picker button in bottom-right */}
+                <label
+                  onClick={(e) => e.stopPropagation()}
+                  className="absolute bottom-1 right-1 w-4 h-4 rounded flex items-center justify-center opacity-0 group-hover:opacity-90 hover:!opacity-100 transition-opacity cursor-pointer shadow-2xs"
+                  style={{
+                    backgroundColor: textColor === '#FFFFFF' ? 'rgba(0,0,0,0.35)' : 'rgba(255,255,255,0.7)',
+                    color: textColor,
+                  }}
+                  title="Change color"
                 >
-                  #{index + 1}
-                </span>
+                  <Pipette size={9} />
+                  <input
+                    type="color"
+                    value={swatch.hex.startsWith('#') && swatch.hex.length === 7 ? swatch.hex : '#000000'}
+                    onChange={(e) => handleUpdateHex(swatch.id, e.target.value)}
+                    className="opacity-0 absolute inset-0 w-full h-full cursor-pointer"
+                  />
+                </label>
 
                 {/* Remove button icon on top right if > 1 */}
                 {swatches.length > 1 && (
@@ -299,6 +359,8 @@ export const CustomPaletteTab: React.FC<CustomPaletteTabProps> = ({
                   value={swatch.name ?? `c${index + 1}`}
                   onChange={(e) => handleUpdateName(swatch.id, e.target.value)}
                   placeholder={`c${index + 1}`}
+                  draggable={false}
+                  onMouseDown={(e) => e.stopPropagation()}
                   className="w-16 mt-1 text-center bg-white border border-slate-300 rounded px-1 py-0.5 text-[10px] font-mono text-slate-800 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-2xs"
                   title="Variable name"
                 />
@@ -321,17 +383,20 @@ export const CustomPaletteTab: React.FC<CustomPaletteTabProps> = ({
         </div>
       </div>
 
-      {/* 5. Options Bar: Renamed toggle "Add labels" & Reverse Order */}
+      {/* 5. Options Bar: Renamed toggle "Add labels", Drag hint & Reverse Order */}
       <div className="flex items-center justify-between pt-1 border-t border-slate-100 text-xs text-slate-600">
-        <label className="flex items-center gap-1.5 cursor-pointer select-none">
-          <input
-            type="checkbox"
-            checked={showNaming}
-            onChange={(e) => setShowNaming(e.target.checked)}
-            className="rounded border-slate-300 text-blue-600 focus:ring-0 h-3.5 w-3.5 cursor-pointer"
-          />
-          <span className="text-[11px] font-medium text-slate-700">Add labels</span>
-        </label>
+        <div className="flex items-center gap-3">
+          <label className="flex items-center gap-1.5 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={showNaming}
+              onChange={(e) => setShowNaming(e.target.checked)}
+              className="rounded border-slate-300 text-blue-600 focus:ring-0 h-3.5 w-3.5 cursor-pointer"
+            />
+            <span className="text-[11px] font-medium text-slate-700">Add labels</span>
+          </label>
+          <span className="text-[10px] text-slate-400 hidden sm:inline">· Drag squares to reorder</span>
+        </div>
 
         <button
           onClick={handleReverseOrder}

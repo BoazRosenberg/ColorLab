@@ -7,4 +7,5 @@ test_that("colorlab function is exported", {
   expect_true(is.function(colorlab))
   expect_true(is.function(run_colorlab))
   expect_true(is.function(ColorLab))
+  expect_true(is.function(launch_palette_tutorial))
 })
